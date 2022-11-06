@@ -66,6 +66,22 @@ def get_available_hours(driver, day):
         print("No hay dias disponibles.")
 
 
+def get_best_hour(driver):
+    for n in PRIORITY:
+        xpath = "/html/body/div[4]/div[3]/div/div/div/main/section[2]/div[3]/div[2]/div[1]/table/tbody/tr[" + \
+                DICTIONARY[n] + "]/td[2]"
+        try:
+            WebDriverWait(driver, 1).until(
+                expected_conditions.element_to_be_clickable((By.XPATH, xpath))).click()
+            WebDriverWait(driver, 5).until(
+                expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "div.btn-modal-horas"))).click()
+
+            print("¡A las {} hay sitio!".format(n))
+            break
+        except:
+            print("A las {} no hay sitio.".format(n))
+
+
 def main():
     options = webdriver.FirefoxOptions()
     options.add_argument('--start-maximiezed')
@@ -73,18 +89,11 @@ def main():
 
     driver = webdriver.Firefox(options=options)
 
-    # login(driver, USERNAME, PASSWORD)
+    login(driver, USERNAME, PASSWORD)
 
     driver.get(BODYBUILDING)
-
-    get_available_hours(driver, 10)
-
-    # WebDriverWait(driver, 5).until(
-    #   expected_conditions.element_to_be_clickable((By.XPATH,
-    #                                               "/html/body/div[4]/div[3]/div/div/div/main/section[2]/div[3]/div[2]/div[1]/table/tbody/tr[11]/td[2]"))).click()
-
-    # WebDriverWait(driver, 5).until(
-    # expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "div.btn-modal-horas"))).click()
+    select_day(driver, "9")
+    get_best_hour(driver)
 
     print("OK")
 
