@@ -5,6 +5,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
+from threading import Thread
+from datetime import datetime, timedelta
 import time
 import pandas as pd
 
@@ -19,7 +21,53 @@ DICTIONARY = dict(
 PRIORITY = ["19:00", "18:00", "20:00", "21:00", "17:00"]
 
 
+class Temp(Thread):
+    def __init__(self, hora, delay, function):
+        super(Temp, self).__init__()
+        self._estado = True
+        self.hora = hora
+        self.delay = delay
+        self.function = function
+
+    def stop(self):
+        self._estado = False
+
+    def run(self):
+        # String to type datetime
+        aux = datetime.strptime(self.hora, '%H:%M:%S')
+
+        # Get current datetime
+        hora = datetime.now()
+
+        # Replace the hour for the time we want the program to execute
+        hora = hora.replace(hour=aux.hour, minute=aux.minute, second=aux.second, microsecond=0)
+
+        # Check if it is time or not, if has passed we add one day (no execution today)
+        if hora <= datetime.now():
+            hora += timedelta(seconds=10)
+
+        print('Ejecución automática iniciada.')
+        print('Próxima ejecución el {} a las {}'.format(hora.date(), hora.time()))
+
+        while self._estado:
+            # Compare current hour with execution and execute or not function
+            # If it has executed, one day added to objective date
+            if hora <= datetime.now():
+                self.function()
+                print('Ejecución programada ejecutada el {} a las {}'.format(hora.date(), hora.time()))
+                hora += timedelta(seconds=10)
+                print('Próxima ejecución programada el {} a las {}'.format(hora.date(), hora.time()))
+
+            # Wait x seconds to restart
+            sleep(self.delay)
+        else:
+            print("Ejecución finalizada")
+
+
 # 2to16 hours 8:00-22:00
+def execute():
+    print("Función ejecutada desde hilo")
+
 
 def select_day(driver, day):
     WebDriverWait(driver, 5).until(
@@ -66,7 +114,15 @@ def get_available_hours(driver, day):
         print("No hay dias disponibles.")
 
 
-def get_best_hour(driver):
+def get_best_hour():
+    driver = init_driver()
+
+    login(driver, USERNAME, PASSWORD)
+
+    driver.get(BODYBUILDING)
+
+    select_day(driver, "10")
+
     for n in PRIORITY:
         xpath = "/html/body/div[4]/div[3]/div/div/div/main/section[2]/div[3]/div[2]/div[1]/table/tbody/tr[" + \
                 DICTIONARY[n] + "]/td[2]"
@@ -76,25 +132,98 @@ def get_best_hour(driver):
             WebDriverWait(driver, 5).until(
                 expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "div.btn-modal-horas"))).click()
 
+            WebDriverWait(driver, 5).until(
+                expected_conditions.element_to_be_clickable((By.XPATH,
+                                                             "/html/body/div[4]/div[3]/div/div/div/section/div[3]/div[7]/div[4]/div/div[4]/div[1]/div[1]/div[2]"))).click()
+
             print("¡A las {} hay sitio!".format(n))
             break
         except:
             print("A las {} no hay sitio.".format(n))
 
+    # driver.close()
 
-def main():
+
+def init_driver():
     options = webdriver.FirefoxOptions()
+
     options.add_argument('--start-maximiezed')
     options.add_argument('--disable-extensions')
 
     driver = webdriver.Firefox(options=options)
 
+    return driver
+
+
+def deleteBooking(driver):
+    day1 = True
+    day2 = True
+
     login(driver, USERNAME, PASSWORD)
 
-    driver.get(BODYBUILDING)
-    select_day(driver, "9")
-    get_best_hour(driver)
+    WebDriverWait(driver, 3).until(
+        expected_conditions.element_to_be_clickable((By.XPATH,
+                                                     "/html/body/div[4]/div[1]/nav/div/div[2]/ul[2]/li[1]/a"))).click()
 
+    WebDriverWait(driver, 3).until(
+        expected_conditions.element_to_be_clickable((By.XPATH,
+                                                     "/html/body/div[4]/div[1]/nav/div/div[2]/ul[2]/li[1]/ul/li[3]/a"))).click()
+
+    try:
+        WebDriverWait(driver, 3).until(
+            expected_conditions.element_to_be_clickable((By.XPATH,
+                                                         "/html/body/div[4]/div[3]/div/div/div/main/div/div[3]/section[2]/div[4]/div/table/tbody/tr[2]/td[2]")))
+        date1 = driver.find_element(By.XPATH,
+                                    "/html/body/div[4]/div[3]/div/div/div/main/div/div[3]/section[2]/div[4]/div/table/tbody/tr[2]/td[2]")
+        hour1 = driver.find_element(By.XPATH,
+                                    "/html/body/div[4]/div[3]/div/div/div/main/div/div[3]/section[2]/div[4]/div/table/tbody/tr[2]/td[3]")
+        t_date = date1.text
+        t_hour = hour1.text
+        date = datetime.strptime(t_date + " " + t_hour.split("-", 1)[0], "%d/%m/%Y %H:%M")
+
+        print(t_date)
+        print(t_hour)
+        print(date)
+    except:
+        print("No encuentro el dia.")
+        day1 = False
+
+    try:
+        WebDriverWait(driver, 3).until(
+            expected_conditions.element_to_be_clickable((By.XPATH,
+                                                         "/html/body/div[4]/div[3]/div/div/div/main/div/div[3]/section[2]/div[4]/div/table/tbody/tr[3]/td[2]")))
+        date2 = driver.find_element(By.XPATH,
+                                    "/html/body/div[4]/div[3]/div/div/div/main/div/div[3]/section[2]/div[4]/div/table/tbody/tr[3]/td[2]")
+        hour2 = driver.find_element(By.XPATH,
+                                    "/html/body/div[4]/div[3]/div/div/div/main/div/div[3]/section[2]/div[4]/div/table/tbody/tr[3]/td[3]")
+        t_date = date2.text
+        t_hour = hour2.text
+        date = datetime.strptime(t_date + " " + t_hour.split("-", 1)[0], "%d/%m/%Y %H:%M")
+
+        print(t_date)
+        print(t_hour)
+        print(date.strftime())
+    except:
+        print("No encuentro el dia.")
+        day1 = False
+
+
+def main():
+    # t = Temp('18:52:00', 1, get_best_hour)
+    # t.start()
+    #
+    # sleep(2)
+    # for _ in range(10):
+    #     print("Imprimiendo desde main")
+    #     sleep(2)
+    #
+    # sleep(120)
+    # t.stop()
+    # get_best_hour()
+
+    driver = init_driver()
+
+    deleteBooking(driver)
     print("OK")
 
 
