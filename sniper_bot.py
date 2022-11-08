@@ -66,9 +66,19 @@ class Temp(Thread):
 
 # 2to16 hours 8:00-22:00
 def execute():
-    print("Función ejecutada desde hilo")
+    print("Escogiendo hora")
+    driver = init_driver()
+    get_best_hour("11", driver)
 
 
+def login(driver, username, password):
+    driver.get(LOGIN)
+    driver.find_element(By.ID, "username").send_keys(username)
+    driver.find_element(By.ID, "password").send_keys(password)
+    driver.find_element(By.NAME, "submit").click()
+
+
+# Selects the day on the calendar
 def select_day(driver, day):
     WebDriverWait(driver, 5).until(
         expected_conditions.element_to_be_clickable((By.ID, "fecha"))).click()
@@ -87,15 +97,10 @@ def select_day(driver, day):
         expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "td.active"))).click()
 
 
-def login(driver, username, password):
-    driver.get(LOGIN)
-    driver.find_element(By.ID, "username").send_keys(username)
-    driver.find_element(By.ID, "password").send_keys(password)
-    driver.find_element(By.NAME, "submit").click()
-
-
 def get_available_hours(driver, day):
+    driver.get(BODYBUILDING)
     select_day(driver, day)
+    output = []
 
     WebDriverWait(driver, 5).until(
         expected_conditions.element_to_be_clickable((By.XPATH,
@@ -110,18 +115,22 @@ def get_available_hours(driver, day):
 
         for disponible in disponibles:
             print(disponible.text)
+            output.append(disponible.text)
     except:
         print("No hay dias disponibles.")
 
+    return output
 
-def get_best_hour():
-    driver = init_driver()
 
-    login(driver, USERNAME, PASSWORD)
+def get_best_hour(day, driver=None):
+    if not driver:
+        driver = init_driver()
+
+    #login(driver, USERNAME, PASSWORD)
 
     driver.get(BODYBUILDING)
 
-    select_day(driver, "10")
+    select_day(driver, day)
 
     for n in PRIORITY:
         xpath = "/html/body/div[4]/div[3]/div/div/div/main/section[2]/div[3]/div[2]/div[1]/table/tbody/tr[" + \
@@ -131,17 +140,23 @@ def get_best_hour():
                 expected_conditions.element_to_be_clickable((By.XPATH, xpath))).click()
             WebDriverWait(driver, 5).until(
                 expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "div.btn-modal-horas"))).click()
+            sleep(5)
+            WebDriverWait(driver, 5).until(
+                expected_conditions.element_to_be_clickable((By.CSS_SELECTOR,
+                                                             "div.col-md-3:nth-child(4) > div:nth-child(2)"))).click()
 
             WebDriverWait(driver, 5).until(
-                expected_conditions.element_to_be_clickable((By.XPATH,
-                                                             "/html/body/div[4]/div[3]/div/div/div/section/div[3]/div[7]/div[4]/div/div[4]/div[1]/div[1]/div[2]"))).click()
+                expected_conditions.element_to_be_clickable((By.CSS_SELECTOR,
+                                                             ".alert")))
 
-            print("¡A las {} hay sitio!".format(n))
+            print("¡A las {} hay sitio! ¡Reservado!".format(n))
             break
         except:
             print("A las {} no hay sitio.".format(n))
+            sleep(3)
 
-    # driver.close()
+
+# driver.close()
 
 
 def init_driver():
@@ -153,6 +168,36 @@ def init_driver():
     driver = webdriver.Firefox(options=options)
 
     return driver
+
+
+def removeReservation(driver, res):
+    login(driver, USERNAME, PASSWORD)
+
+    WebDriverWait(driver, 3).until(
+        expected_conditions.element_to_be_clickable((By.XPATH,
+                                                     "/html/body/div[4]/div[1]/nav/div/div[2]/ul[2]/li[1]/a"))).click()
+
+    WebDriverWait(driver, 3).until(
+        expected_conditions.element_to_be_clickable((By.XPATH,
+                                                     "/html/body/div[4]/div[1]/nav/div/div[2]/ul[2]/li[1]/ul/li[3]/a"))).click()
+
+    WebDriverWait(driver, 3).until(
+        expected_conditions.element_to_be_clickable((By.XPATH,
+                                                     "/html/body/div[4]/div[3]/div/div/div/main/div/div[3]/section[2]/div[4]/div/table/tbody/tr[2]/td[7]/button"))).click()
+
+    WebDriverWait(driver, 3).until(
+        expected_conditions.element_to_be_clickable((By.CSS_SELECTOR,
+                                                     "div.col-md-3:nth-child(2) > div:nth-child(2) > button:nth-child(1)"))).click()
+
+    WebDriverWait(driver, 3).until(
+        expected_conditions.element_to_be_clickable((By.ID,
+                                                     "botonAnular"))).click()
+
+    WebDriverWait(driver, 3).until(
+        expected_conditions.element_to_be_clickable((By.CSS_SELECTOR,
+                                                     "button.btn-primary:nth-child(1)"))).click()
+
+    print("Reserva borrada.")
 
 
 def getCurrentReservations(driver):
@@ -210,25 +255,39 @@ def getCurrentReservations(driver):
 
 
 def main():
-    # t = Temp('18:52:00', 1, get_best_hour)
+    # t = Temp('18:25:00', 1, execute)
     # t.start()
     #
-    # sleep(2)
-    # for _ in range(10):
-    #     print("Imprimiendo desde main")
-    #     sleep(2)
-    #
-    # sleep(120)
+    # sleep(1800)
     # t.stop()
-    # get_best_hour()
+    # driver = init_driver()
+
+    # login(driver, USERNAME, PASSWORD)
+    # get_best_hour("11", driver)
+
+    # driver = init_driver()
+
+    # reservations = getCurrentReservations(driver)
+
+    # print("Tienes {} reservas activas: ".format(len(reservations)))
+    # for r in reservations:
+    #     print("     El día {} a las {}.".format(r.strftime("%d/%m"), r.strftime("%H:%M")))
+    #
+    # get_best_hour("11", driver)
+    # date = datetime.now()
+    # print(date.time())
 
     driver = init_driver()
 
-    reservations = getCurrentReservations(driver)
+    removeReservation(driver, 0)
 
-    print("Tienes {} reservas activas: ".format(len(reservations)))
-    for r in reservations:
-        print("     El día {} a las {}.".format(r.strftime("%d/%m"), r.strftime("%H:%M")))
+    get_best_hour("11", driver)
+    # availables = get_available_hours(driver, "11")
+    #
+    # for i in availables:
+    #     if i in PRIORITY:
+    #         get_best_hour("11", driver)
+    #         break
 
     print("OK")
 
