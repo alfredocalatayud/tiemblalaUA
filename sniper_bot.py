@@ -155,9 +155,8 @@ def init_driver():
     return driver
 
 
-def deleteBooking(driver):
-    day1 = True
-    day2 = True
+def getCurrentReservations(driver):
+    reservations = []
 
     login(driver, USERNAME, PASSWORD)
 
@@ -174,16 +173,17 @@ def deleteBooking(driver):
             expected_conditions.element_to_be_clickable((By.XPATH,
                                                          "/html/body/div[4]/div[3]/div/div/div/main/div/div[3]/section[2]/div[4]/div/table/tbody/tr[2]/td[2]")))
         date1 = driver.find_element(By.XPATH,
-                                    "/html/body/div[4]/div[3]/div/div/div/main/div/div[3]/section[2]/div[4]/div/table/tbody/tr[2]/td[2]")
+                                    "/html/body/div[4]/div[3]/div/div/div/main/" + \
+                                    "div/div[3]/section[2]/div[4]/div/table/tbody/tr[2]/td[2]")
         hour1 = driver.find_element(By.XPATH,
-                                    "/html/body/div[4]/div[3]/div/div/div/main/div/div[3]/section[2]/div[4]/div/table/tbody/tr[2]/td[3]")
+                                    "/html/body/div[4]/div[3]/div/div/div/main/" + \
+                                    "div/div[3]/section[2]/div[4]/div/table/tbody/tr[2]/td[3]")
         t_date = date1.text
         t_hour = hour1.text
         date = datetime.strptime(t_date + " " + t_hour.split("-", 1)[0], "%d/%m/%Y %H:%M")
 
-        print(t_date)
-        print(t_hour)
-        print(date)
+        reservations.append(date)
+
     except:
         print("No encuentro el dia.")
         day1 = False
@@ -200,12 +200,13 @@ def deleteBooking(driver):
         t_hour = hour2.text
         date = datetime.strptime(t_date + " " + t_hour.split("-", 1)[0], "%d/%m/%Y %H:%M")
 
-        print(t_date)
-        print(t_hour)
-        print(date.strftime())
+        reservations.append(date)
+
     except:
         print("No encuentro el dia.")
         day1 = False
+
+    return reservations
 
 
 def main():
@@ -223,7 +224,12 @@ def main():
 
     driver = init_driver()
 
-    deleteBooking(driver)
+    reservations = getCurrentReservations(driver)
+
+    print("Tienes {} reservas activas: ".format(len(reservations)))
+    for r in reservations:
+        print("     El día {} a las {}.".format(r.strftime("%d/%m"), r.strftime("%H:%M")))
+
     print("OK")
 
 
