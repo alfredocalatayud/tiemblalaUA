@@ -262,11 +262,6 @@ def main():
     # t.stop()
     # driver = init_driver()
 
-    # login(driver, USERNAME, PASSWORD)
-    # get_best_hour("11", driver)
-
-    # driver = init_driver()
-
     # reservations = getCurrentReservations(driver)
 
     # print("Tienes {} reservas activas: ".format(len(reservations)))
