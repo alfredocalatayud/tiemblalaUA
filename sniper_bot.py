@@ -21,7 +21,7 @@ DICTIONARY = dict(
     [("08:00", "2"), ("09:00", "3"), ("10:00", "4"), ("11:00", "5"), ("12:00", "6"), ("13:00", "7"), ("14:00", "8"),
      ("15:00", "9"), ("16:00", "10"), ("17:00", "11"), ("18:00", "12"), ("19:00", "13"), ("20:00", "14"),
      ("21:00", "15"), ("22:00", "16")])
-PRIORITY = ["19:00", "18:00", "20:00", "21:00", "17:00"]
+PRIORITY = ['19:00', '18:00', '20:00', '21:00', '17:00']
 
 # EMAIL_SENDER = 'acalatayuds@gmail.com'
 # EMAIL_PASSWORD = 'gypbdvklccuuwris'
@@ -32,7 +32,7 @@ EMAIL_PASSWORD = 'odrfhfducfckpcri'
 EMAIL_RECEIVER = 'acalatayuds@gmail.com'
 
 
-def mail(message):
+def mail(message, subject):
     subject = '¡Hay días disponibles!'
     body = message
 
@@ -73,7 +73,7 @@ class Temp(Thread):
 
         # Check if it is time or not, if has passed we add one day (no execution today)
         if hora <= datetime.now():
-            hora += timedelta(seconds=10)
+            hora += timedelta(seconds=30)
 
         print('Ejecución automática iniciada.')
         print('Próxima ejecución el {} a las {}'.format(hora.date(), hora.time()))
@@ -84,7 +84,7 @@ class Temp(Thread):
             if hora <= datetime.now():
                 output = self.function()
                 print('Ejecución programada ejecutada el {} a las {}'.format(hora.date(), hora.time()))
-                hora += timedelta(seconds=10)
+                hora += timedelta(seconds=30)
                 if not output:
                     print('Próxima ejecución programada el {} a las {}'.format(hora.date(), hora.time()))
                 else:
@@ -158,7 +158,7 @@ def get_best_hour(day, driver=None):
     if not driver:
         driver = init_driver()
 
-    # login(driver, USERNAME, PASSWORD)
+    login(driver, USERNAME, PASSWORD)
 
     driver.get(BODYBUILDING)
 
@@ -182,10 +182,12 @@ def get_best_hour(day, driver=None):
                                                              ".alert")))
 
             print("¡A las {} hay sitio! ¡Reservado!".format(n))
+            return "¡A las {} hay sitio! ¡Reservado!".format(n)
             break
         except:
             print("A las {} no hay sitio.".format(n))
             sleep(3)
+    return False
 
 
 # driver.close()
@@ -195,12 +197,12 @@ def init_driver():
     options = webdriver.FirefoxOptions()
 
     # Maximized
-    # options.add_argument('--start-maximized')
-    # options.add_argument('--disable-extensions')
+    options.add_argument('--start-maximized')
+    options.add_argument('--disable-extensions')
 
     # Minimized
-    options.add_argument('--headless')
-    options.add_argument('--disable-gpu')
+    # options.add_argument('--headless')
+    # options.add_argument('--disable-gpu')
 
     driver = webdriver.Firefox(options=options)
 
@@ -293,7 +295,7 @@ def getCurrentReservations(driver):
     return reservations
 
 
-def execute():
+def execute_available():
     message2 = ''
 
     print("Buscando horas disponibles")
@@ -312,8 +314,39 @@ def execute():
     return horas
 
 
+def execute_reservation():
+    output = None
+    message2 = ''
+    reserved = None
+
+    print("Buscando horas disponibles...")
+    driver = init_driver()
+    n_available = get_available_hours(driver, "15")
+
+    if n_available:
+        print("¡Hay horas disponibles!")
+        message1 = 'Las siguientes horas están disponibles: \n\n'
+        for available in n_available:
+            print('     El día 15/11 a las "{}".'.format(available))
+            message2 = message2 + '     El día 15/11 a las {}.\n'.format(available)
+
+    print(n_available)
+
+    if n_available:
+        print('Reservando...')
+        reserved = get_best_hour('15', driver)
+
+    if reserved:
+        print(reserved)
+        message3 = reserved
+        mail(message1 + message2 + message3, '¡Nueva reserva!')
+        output = True
+
+    return output
+
+
 def main():
-    t = Temp('18:25:00', 1, execute)
+    t = Temp('10:01:00', 1, execute_reservation)
     t.start()
 
     while t.is_alive():
@@ -343,6 +376,7 @@ def main():
     #     if i in PRIORITY:
     #         get_best_hour("11", driver)
     #         break
+
 
 if __name__ == "__main__":
     main()
